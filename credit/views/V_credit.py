@@ -27,17 +27,11 @@ class V_credit_create(CreateAPIView):
         Plazo: {credit.months} meses
         """
         
-        try:
-            send_async_email(
-                subject,
-                message,
-                [settings.EMAIL_DESTINATION]
-            )
-        except Exception as e:
-            return Response(
-                {"error_email": str(e)},
-                status=500
-            )
+        send_async_email(
+            subject, 
+            message, 
+            [settings.EMAIL_DESTINATION] 
+        )
         
         return credit
 
@@ -45,34 +39,14 @@ class V_credit_create(CreateAPIView):
         serializer = self.get_serializer(data=request.data)
 
         if serializer.is_valid():
-            credit = serializer.save()
-
-            subject = 'Nuevo crédito registrado'
-            message = f"""
-            Se ha registrado un nuevo crédito:
-            
-            Nombre: {credit.full_name}
-            Documento: {credit.dni}
-            Valor: ${credit.credit_value}
-            Intereses: {credit.interests}%
-            Plazo: {credit.months} meses
-            """
-
-            try:
-                send_async_email(
-                    subject,
-                    message,
-                    [settings.EMAIL_DESTINATION]
-                )
-            except Exception as e:
-                return Response(
-                    {"error_email": str(e)},
-                    status=500
-                )
-
+            self.perform_create(serializer)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        return Response(serializer.errors, status=400)
+        
+        error = {
+            'message': 'Error al crear el crédito',
+            'errors': serializer.errors
+        }
+        return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
 class V_credit_list(ListAPIView):
     queryset = Credit.objects.all()

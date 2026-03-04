@@ -1,8 +1,7 @@
-# credit/utils/email_utils.py
 import threading
-from django.core.mail import send_mail
-from django.conf import settings
+import resend
 import logging
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -15,16 +14,25 @@ class EmailThread(threading.Thread):
 
     def run(self):
         try:
-            send_mail(
-                self.subject,
-                self.message,
-                settings.EMAIL_HOST_USER,
-                self.recipient_list,
-                fail_silently=False,
-            )
+            print(">>> Iniciando envío de correo")
+            resend.api_key = settings.RESEND_API_KEY
+            print(f">>> API KEY: {settings.RESEND_API_KEY}")
+            print(f">>> FROM: {settings.EMAIL_FROM}")
+            print(f">>> TO: {self.recipient_list}")
+
+            params = {
+                "from": settings.EMAIL_FROM,
+                "to": self.recipient_list,
+                "subject": self.subject,
+                "text": self.message,
+            }
+
+            response = resend.Emails.send(params)
+            print(f">>> Respuesta Resend: {response}")
             logger.info(f"Correo enviado exitosamente a {self.recipient_list}")
         except Exception as e:
-            logger.error(f"Error enviando correo: {str(e)}")
+            print(f">>> ERROR: {str(e)}")
+            logger.error(f"Error enviando correo: {str(e)}", exc_info=True)
 
 def send_async_email(subject, message, recipient_list):
     EmailThread(subject, message, recipient_list).start()
