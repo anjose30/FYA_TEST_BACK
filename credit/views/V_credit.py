@@ -27,11 +27,17 @@ class V_credit_create(CreateAPIView):
         Plazo: {credit.months} meses
         """
         
-        send_async_email(
-            subject, 
-            message, 
-            [settings.EMAIL_DESTINATION] 
-        )
+        try:
+            send_async_email(
+                subject,
+                message,
+                [settings.EMAIL_DESTINATION]
+            )
+        except Exception as e:
+            return Response(
+                {"error_email": str(e)},
+                status=500
+            )
         
         return credit
 
